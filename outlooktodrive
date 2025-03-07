@@ -1,0 +1,96 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "triggerOn": "all",
+        "resource": "message",
+        "operation": "getAll",
+        "filters": {
+          "hasAttachments": true
+        }
+      },
+      "name": "Outlook Trigger",
+      "type": "n8n-nodes-base.microsoftOutlook",
+      "typeVersion": 1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{!!Object.keys($json.attachments || {}).length}}",
+              "operation": "notEmpty"
+            }
+          ],
+          "string": [
+            {
+              "value1": "={{$json.subject}}",
+              "operation": "contains",
+              "value2": "archivar"
+            }
+          ]
+        }
+      },
+      "name": "IF - Subject Contains 'archivar'",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [400, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "return items[0].json.attachments.map(attachment => { return { json: attachment } });"
+      },
+      "name": "Split Attachments",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [600, 300]
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "binaryData": true,
+        "filePath": "={{'/OneDrive/Archivos/Correos Archivados/' + $json.name}}"
+      },
+      "name": "Upload to OneDrive",
+      "type": "n8n-nodes-base.microsoftOneDrive",
+      "typeVersion": 1,
+      "position": [800, 300]
+    }
+  ],
+  "connections": {
+    "Outlook Trigger": {
+      "main": [
+        [
+          {
+            "node": "IF - Subject Contains 'archivar'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Subject Contains 'archivar'": {
+      "main": [
+        [
+          {
+            "node": "Split Attachments",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Attachments": {
+      "main": [
+        [
+          {
+            "node": "Upload to OneDrive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
